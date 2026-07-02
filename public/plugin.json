@@ -1,0 +1,15 @@
+{
+  "main": "index.html",
+  "preload": "preload/services.js",
+  "logo": "logo.png",
+  "development": {
+    "main": "http://localhost:5173"
+  },
+  "features": [
+    {
+      "code": "WordBook",
+      "explain": "进入复制单词进行翻译",
+      "cmds": ["你的随记单词本","快来进行翻译记单词吧！"]
+    }
+  ]
+}

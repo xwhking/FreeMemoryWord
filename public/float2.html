@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词卡片</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        .title-bar {
+            -webkit-app-region: drag; /* 使整个标题栏可拖动 */
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            background-color: rgba(245, 245, 245, 0.9);
+            border-radius: 4px;
+            margin: -10px -10px 0 -10px; /* 扩展到边缘 */
+        }
+        .title-text {
+            font-size: 14px;
+            color: #333;
+        }
+        .close-btn {
+            -webkit-app-region: no-drag; /* 确保按钮可点击 */
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+        .word-card {
+            width: 300px;
+            height: 200px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+        }
+
+        .word-header {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            background-color: #f9f9f9;
+        }
+
+        .word-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .word-title h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .pronunciation {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .phonetic {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .audio-btn {
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .audio-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .translations {
+            font-size: 14px;
+            color: #444;
+        }
+
+        .tran-item {
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .pos {
+            color: #888;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+
+        .word-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 12px;
+        }
+
+        .section {
+            margin: 10px 0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: #555;
+            margin: 8px 0 6px 0;
+            font-weight: 600;
+        }
+
+        .phrase-list, .sentence-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .phrase-item, .sentence-item {
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .phrase-en {
+            font-weight: 500;
+            color: #333;
+            margin-right: 6px;
+        }
+
+        .phrase-cn {
+            color: #666;
+        }
+
+        .rel-word-item, .synonym-item {
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .hwd {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .tran, .syn-tran {
+            color: #666;
+        }
+
+        .sentence-en {
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .sentence-cn {
+            color: #666;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 20px 0;
+            font-size: 14px;
+        }
+
+        /* 滚动条样式 */
+        .word-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .word-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .word-content::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 2px;
+        }
+
+        .word-content::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <div class="container">
+        <div class="title-bar">
+            <span class="title-text">单词学习</span>
+            <span class="close-btn" onclick="window.close()">×</span>
+        </div>
+<!--        <word-card :word="fullWordData"></word-card>-->
+        <word-card :word="emptyWordData"></word-card>
+    </div>
+</div>
+
+<script>
+    const { createApp, computed } = Vue;
+
+    const WordCard = {
+        template: `
+        <div class="word-card">
+          <!-- 单词标题区域 -->
+          <div class="word-header">
+            <div class="word-title">
+              <h2>{{ word.word }}</h2>
+              <div class="pronunciation">
+                <span v-if="word.ukphone" class="phonetic">UK: /{{ word.ukphone }}/</span>
+                <span v-if="word.usphone" class="phonetic">US: /{{ word.usphone }}/</span>
+                <button v-if="word.ukspeech" @click="playAudio(word.ukspeech)" class="audio-btn">UK</button>
+                <button v-if="word.usspeech" @click="playAudio(word.usspeech)" class="audio-btn">US</button>
+              </div>
+            </div>
+            <div v-if="hasTranslations" class="translations">
+              <span v-for="(tran, index) in word.translations" :key="index" class="tran-item">
+                <span v-if="tran.pos" class="pos">{{ tran.pos }}.</span>
+                {{ tran.tran_cn }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 主要内容区域，使用滚动条 -->
+          <div class="word-content">
+            <!-- 短语部分 -->
+            <div v-if="hasPhrases" class="section">
+              <h3 class="section-title">常用短语</h3>
+              <ul class="phrase-list">
+                <li v-for="(phrase, index) in word.phrases" :key="index" class="phrase-item">
+                  <span class="phrase-en">{{ phrase.p_content }}</span>
+                  <span class="phrase-cn">{{ phrase.p_cn }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- 相关词部分 -->
+            <div v-if="hasRelWords" class="section">
+              <h3 class="section-title">相关词汇</h3>
+              <div v-for="(relWord, index) in word.relWords" :key="index" class="rel-word-item">
+                <span class="pos">{{ relWord.Pos }}.</span>
+                <span v-for="(hwd, hIndex) in relWord.Hwds" :key="hIndex" class="hwd">
+                  {{ hwd.hwd }} <span class="tran">{{ hwd.tran }}</span>
+                  <span v-if="hIndex < relWord.Hwds.length - 1">; </span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 同义词部分 -->
+            <div v-if="hasSynonyms" class="section">
+              <h3 class="section-title">同义词</h3>
+              <div v-for="(synonym, index) in word.synonyms" :key="index" class="synonym-item">
+                <span class="pos">{{ synonym.pos }}.</span>
+                <span v-for="(word, wIndex) in synonym.Hwds" :key="wIndex" class="syn-word">
+                  {{ word.word }}
+                  <span v-if="wIndex < synonym.Hwds.length - 1">, </span>
+                </span>
+                <span class="syn-tran">{{ synonym.tran }}</span>
+              </div>
+            </div>
+
+            <!-- 例句部分 -->
+            <div v-if="hasSentences" class="section">
+              <h3 class="section-title">例句</h3>
+              <ul class="sentence-list">
+                <li v-for="(sentence, index) in word.sentences" :key="index" class="sentence-item">
+                  <div class="sentence-en">{{ sentence.s_content }}</div>
+                  <div class="sentence-cn">{{ sentence.s_cn }}</div>
+                </li>
+              </ul>
+            </div>
+
+            <!-- 空数据提示 -->
+            <div v-if="isEmpty" class="empty-message">
+              暂无更多单词信息
+            </div>
+          </div>
+        </div>
+      `,
+        props: {
+            word: {
+                type: Object,
+                required: true,
+                default: () => ({})
+            }
+        },
+        setup(props) {
+            // 计算属性检查各部分是否有数据
+            const hasTranslations = computed(() => props.word.translations && props.word.translations.length > 0);
+            const hasPhrases = computed(() => props.word.phrases && props.word.phrases.length > 0);
+            const hasRelWords = computed(() => props.word.relWords && props.word.relWords.length > 0);
+            const hasSynonyms = computed(() => props.word.synonyms && props.word.synonyms.length > 0);
+            const hasSentences = computed(() => props.word.sentences && props.word.sentences.length > 0);
+            const isEmpty = computed(() => !hasTranslations.value && !hasPhrases.value && !hasRelWords.value && !hasSynonyms.value && !hasSentences.value);
+
+            // 播放音频
+            const playAudio = (audioUrl) => {
+                const audio = new Audio(audioUrl);
+                audio.play().catch(e => console.error("Audio playback failed:", e));
+            };
+
+            return {
+                hasTranslations,
+                hasPhrases,
+                hasRelWords,
+                hasSynonyms,
+                hasSentences,
+                isEmpty,
+                playAudio
+            };
+        }
+    };
+    const words = JSON.parse(window.utools.dbStorage.getItem("wordBook"))
+    const app = createApp({
+        components: {
+            WordCard
+        },
+        data() {
+            return {
+                fullWordData: {
+                    "bookId": "CET4_2",
+                    "phrases": [
+                        {"p_cn": "向…学习", "p_content": "learn from"},
+                        {"p_cn": "学习英语", "p_content": "learn english"},
+                        {"p_cn": "了解；学习", "p_content": "learn about"},
+                        {"p_cn": "自学", "p_content": "learn by oneself"},
+                        {"p_cn": "听说，听到；获悉", "p_content": "learn of"},
+                        {"p_cn": "做事；学会做某事；学习做…", "p_content": "learn to do"},
+                        {"p_cn": "学习如何学习", "p_content": "learn how to learn"},
+                        {"p_cn": "记住；默记；背诵", "p_content": "learn by heart"},
+                        {"p_cn": "受到教训", "p_content": "learn a lesson"},
+                        {"p_cn": "学习的动机", "p_content": "motivation to learn"},
+                        {"p_cn": "摸到门道；弄清内幕；知道事情的内情", "p_content": "learn the ropes"},
+                        {"p_cn": "通过艰难困苦而学到", "p_content": "learn the hard way"},
+                        {"p_cn": "活到老学到老；学无止境", "p_content": "learn and live"}
+                    ],
+                    "relWords": [
+                        {"Hwds": [{"hwd": "learned", "tran": " 博学的；有学问的；学术上的"}], "Pos": "adj"},
+                        {"Hwds": [{"hwd": "learnedly", "tran": " 学识上"}], "Pos": "adv"},
+                        {"Hwds": [{"hwd": "learning", "tran": " 学习；学问"}, {"hwd": "learner", "tran": " 初学者，学习者"}], "Pos": "n"},
+                        {"Hwds": [{"hwd": "learning", "tran": " 学习（learn的现在分词）"}], "Pos": "v"}
+                    ],
+                    "sentences": [
+                        {"s_cn": "学习语言的最佳方法是什么？", "s_content": "What's the best way to learn a language?"},
+                        {"s_cn": "老师的任务是帮助学生学习。", "s_content": "The teacher's task is to help the pupil learn."},
+                        {"s_cn": "学生将从经验中学到制订计划的重要性。", "s_content": "The student will learn from experience about the importance of planning."}
+                    ],
+                    "synonyms": [
+                        {"Hwds": [{"word": "to study"}, {"word": "linken"}], "pos": "vt", "tran": "学习；得知；认识到"},
+                        {"Hwds": [{"word": "to study"}], "pos": "vi", "tran": "学习；获悉"}
+                    ],
+                    "translations": [
+                        {"pos": "vi&vt", "tran_cn": "学，学习"}
+                    ],
+                    "ukphone": "lɜːn",
+                    "ukspeech": "https://dict.youdao.com/dictvoice?audio=learn&type=1",
+                    "usphone": "lɝn",
+                    "usspeech": "https://dict.youdao.com/dictvoice?audio=learn&type=2",
+                    "word": "learn",
+                    "time": 1743599044459
+                },
+                emptyWordData: {
+                    "translations": [{"pos": "来自有道翻译", "tran_cn": "文本蕴涵"}],
+                    "phrases": [],
+                    "relWords": [],
+                    "synonyms": [],
+                    "sentences": [],
+                    "time": 1743127936897,
+                    "word": "textual entailment"
+                }
+            };
+        }
+    });
+
+    app.mount('#app');
+</script>
+</body>
+</html>
