@@ -56,6 +56,7 @@ const fetchData = async () => {
       relWords:[],
       synonyms:[],
       sentences:[],
+      note: '',
       time:Date.now(),
       word:word.value,
     }
@@ -84,6 +85,7 @@ const saveWordToWordBook = () => {
     }
   }
   wordBook.push(responseData.value);
+  wordBook[wordBook.length - 1].note = ''
   wordBook.sort((a, b) => b.time - a.time);
   window.utools.dbStorage.setItem("wordBook", JSON.stringify(wordBook));
   MessagePlugin.success("收藏成功！")

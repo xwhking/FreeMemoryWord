@@ -5,6 +5,7 @@ import {MessagePlugin} from "tdesign-vue-next";
 const formData = reactive({
   word: '',
   translations: '',
+  note: '',
 });
 const submitData = ()=>{
   // console.log(formData);
@@ -23,6 +24,7 @@ const submitData = ()=>{
     relWords:[],
     synonyms:[],
     sentences:[],
+    note: formData.note,
     time:Date.now(),
     word:formData.word,
   }
@@ -33,6 +35,7 @@ const submitData = ()=>{
   MessagePlugin.success("添加成功！")
   formData.word = '';
   formData.translations = '';
+  formData.note = '';
 }
 </script>
 
@@ -43,6 +46,9 @@ const submitData = ()=>{
     </t-form-item>
     <t-form-item label="翻译" name="translations">
       <t-input v-model="formData.translations"></t-input>
+    </t-form-item>
+    <t-form-item label="备注" name="note">
+      <t-textarea v-model="formData.note" placeholder="添加个性化记忆点..."></t-textarea>
     </t-form-item>
     <t-form-item>
       <t-button theme="primary" type="submit">录入</t-button>
